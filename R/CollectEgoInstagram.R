@@ -1,85 +1,68 @@
-#' Create 'ego' networks from social media data
+#' Collect Instagram data for generating ego network
 #' 
-#' This function creates 'ego' networks from social media data (currently only
-#' Instagram). The networks are igraph objects. The user provides a character
-#' vector of usernames, and the function collects data about the 'followers' of
-#' the users, with options to also collect data about who each user 'follows'.
-#' It also provides the ability to specify the 'degree' of the egonet (also
-#' sometimes known as the order), currently for 1-degree (ego + alters) or
-#' 2-degree (ego + alters + alters of alters of ego).
+#' This function collects data for creating a (weighted and directed) 'ego'
+#' network from a given set of seed users (the ego nodes). Note! The network
+#' size can become extremely large very quickly, depending on the arguments the
+#' user provides to this function. For example, specifying degreeEgoNet=2 and
+#' getFollows=TRUE can generate very large networks from just a small number of
+#' ego users (even just 3 or 4 ego nodes).
 #' 
-#' This function creates a (weighted and directed) 'ego' network from a given
-#' set of seed users (the ego nodes).
 #' 
-#' The resulting network is an igraph graph object.
-#' 
-#' Note! The network size can become extremely large very quickly, depending on
-#' the arguments the user provides to this function. For example, specifying
-#' `degreeEgoNet=2` and `getFollows=TRUE` can generate very large networks from
-#' just a small number of ego users (even just 3 or 4 ego nodes).
-#' 
-#' @param dataSource character string, specifying which data source. Currently
-#' only "instagram" (default).
 #' @param username character vector, specifying a set of usernames who will be
 #' the 'ego' nodes for the network generation.
-#' @param userid numeric vector, specifying a set of user ids who will be the
-#' 'ego' nodes for the network generation. If usernames are already specified,
-#' this argument is ignored.
-#' @param getFollows Logical, if TRUE (default), also collect who each 'ego'
-#' node itself follows (i.e. not just the followers of ego), and integrate
-#' these data into the ego network.
-#' @param verbose logical. If \code{TRUE} then this function will output
-#' runtime information to the console as it computes. Useful diagnostic tool
-#' for long computations. Default is \code{FALSE}.
+#' @param userid character vector, specifying a set of usernames who will be
+#' the 'ego' nodes for the network generation.
+#' @param verbose logical. If TRUE then this function will output runtime
+#' information to the console as it computes. Useful diagnostic tool for long
+#' computations. Default is FALSE.
 #' @param degreeEgoNet Numeric, the 'order' or 'degree' of the ego-network to
 #' create (1 is default). 1 = ego + alters. 2 = ego + alters + alters of
 #' alters.
-#' @param waitForRateLimit logical. If \code{TRUE} then it will try to observe
-#' the API rate limit by ensuring that no more than 5000 API calls are made per
-#' hour (the current rate limit). If more than 5000 calls are made within a 60
+#' @param waitForRateLimit logical. If TRUE then it will try to observe the API
+#' rate limit by ensuring that no more than 5000 API calls are made per hour
+#' (the current rate limit). If more than 5000 calls are made within a 60
 #' minute window, then all operates will suspend for 60 minutes, and resume
 #' afterwards. Note: API calls are only tracked within the scope of this
 #' function.
-#' @param writeToFile logical. If \code{TRUE} then the network is saved to file
-#' in current working directory (GRAPHML format), with filename denoting the
-#' current date/time and the type of network.
-#' @return An igraph graph object, with directed and weighted edges.
-#' @note Currently, not all data sources in SocialMediaLab can be used for
-#' creating ego networks. Currently only Instagram is implemented.
-#' @author Timothy Graham <timothy.graham3@@uq.net.au> & Robert Ackland
-#' <robert.ackland@@anu.edu.au>
-#' @seealso See \code{CollectDataYoutube} and \code{CollectDataTwitter} to
-#' collect data sources for creating actor networks in SocialMediaLab.
-#' @keywords SNA unimodal instagram network igraph social media
+#' @param getFollows Logical, if TRUE (default), also collect who each 'ego'
+#' node itself follows (i.e. not just the followers of ego), and integrate
+#' these data into the ego network.
+#' @param credential credential object. Credential information to be use with
+#' API calls. Default to NULL, meaning using the API credential information
+#' store in the current workspace.
+#' @return A data frame object of class \code{dataSource.instagram.ego} that
+#' can be used with \code{Create}.
+#' @author Timothy Graham <timothy.graham3@@uq.net.au>, Robert
+#' Ackland<robert.ackland@@anu.edu.au> & Chung-hong Chan
+#' <chainsawtiney@@gmail.com>
 #' @examples
 #' 
 #' \dontrun{
-#'   ## Use your own values for myAppID and myAppSecret
-#'   myAppID <- "123456789098765"
-#'   myAppSecret <- "abc123abc123abc123abc123abc123ab"
+#' myAppID <- "123456789098765"
+#' myAppSecret <- "abc123abc123abc123abc123abc123ab"
 #' 
-#'   # Authenticate with the Instagram API using `AuthenticateWithInstagramAPI`
-#'   instagram_oauth_token <- AuthenticateWithInstagramAPI(appID=app_id, appSecret=app_secret,
-#'     useCachedToken=TRUE)
+#' # Authenticate with the Instagram API using `AuthenticateWithInstagramAPI`
+#' instagram_oauth_token <- AuthenticateWithInstagramAPI(appID=myAppI,
+#' appSecret=myAppSecret, useCachedToken=TRUE)
 #' 
-#'   myUsernames <- c("senjohnmccain","obama")
-#' 
-#'   g_ego_network <- CreateEgoNetwork(username=myUsernames,verbose=TRUE,degreeEgoNet=1,
-#'     writeToFile=FALSE,waitForRateLimit=TRUE,getFollows=FALSE)
-#' 
-#'   # Description of actor network
-#'   g_ego_network
+#' myUsernames <- c("senjohnmccain","obama")
+#' instagramEgodata <- CollectEgoInstgram(username=myUsernames,
+#' verbose=TRUE,degreeEgoNet=1, waitForRateLimit=TRUE,
+#' getFollows=FALSE)
+#' Create(instagramEgodata)
 #' }
-#' 
-CreateEgoNetwork <-
-function(dataSource,username,userid,verbose,degreeEgoNet,writeToFile,waitForRateLimit,getFollows)
+#' @export
+CollectEgoInstagram <-
+function(username, userid, verbose, degreeEgoNet, waitForRateLimit, getFollows, credential = NULL)
 {
 
   egoName = profile_picture = full_name = id = . = NULL # appease the gods of R CMD CHECK --as-cran
-
-
-  if(!(exists("instagram_oauth_token"))) {
-    instagram_oauth_token <- NULL
+  if(!(exists("instagram_oauth_token")) & is.null(credential)) {
+      instagram_oauth_token <- NULL
+  }
+  ## not using side effect
+  if (!is.null(credential)) {
+      instagram_oauth_token <- credential$auth
   }
 
   # if (missing(token)){
@@ -88,17 +71,14 @@ function(dataSource,username,userid,verbose,degreeEgoNet,writeToFile,waitForRate
   # }
   # token <- instagram_oauth_token
 
-  if (missing(dataSource)) {
-    dataSource <- "instagram" # the default for now, as it is the only dataSource supported
-  }
 
   if (missing(verbose)) {
     verbose <- TRUE
   }
 
-  if (missing(writeToFile)) {
-    writeToFile <- FALSE # default = not write to file
-  }
+  ## if (missing(writeToFile)) {
+  ##   writeToFile <- FALSE # default = not write to file
+  ## }
 
   if (missing(username) & missing(userid)) {
     cat("\nPlease specify either a character vector of username or numeric vector of userid. Exiting now... \n")
@@ -453,41 +433,6 @@ function(dataSource,username,userid,verbose,degreeEgoNet,writeToFile,waitForRate
   if (getFollows) {
     dataCombinedFinal <- rbind(dataCombinedFinal, dataCombinedFollowsFinal)
   }
-
-  # make a graph out of it
-
-  actors <- dataCombinedFinal[,.(username,profile_picture,full_name,id)] # we want the 'actors' from username column
-  actors2 <- dataCombinedFinal[,.(egoName,profile_picture,full_name,id)] # we want the 'actors' from egoName column
-  setnames(actors2,"egoName","username") # make sure the column names match before rbind
-  actors <- rbind(actors,actors2)
-  toDel <- which(duplicated(actors$username))
-  actors <- actors[-toDel,]
-  actors <- as.data.frame(actors)
-  # actors <- unique(actors)
-
-  relations <- data.frame(from=dataCombinedFinal$username[(length(username)+1):nrow(dataCombinedFinal)],to=dataCombinedFinal$egoName[(length(username)+1):nrow(dataCombinedFinal)],ringset=dataCombinedFinal$ringset[(length(username)+1):nrow(dataCombinedFinal)])
-  # relations <- data.frame(from=dataCombinedFinal$username,to=dataCombinedFinal$egoName)
-
-  # g <- graph.data.frame(relations, directed=TRUE, vertices=unique(c(unique(dataCombinedFinal$egoName),unique(dataCombinedFinal$username))))
-  g <- graph.data.frame(relations, directed=TRUE, vertices=actors)
-  # Make the node labels play nice with Gephi
-  V(g)$label <- V(g)$name
-
-  if (writeToFile=="TRUE" | writeToFile=="true" | writeToFile=="T" | writeToFile==TRUE) {
-    currTime <- format(Sys.time(), "%b_%d_%X_%Y_%Z")
-    currTime <- gsub(":","_",currTime)
-    write.graph(g, paste0("Instagram_Ego_Network_",currTime,".graphml"), format="graphml")
-    cat("Instagram ego network was written to current working directory (in GRAPHML format), with filename:\n")
-    cat(paste0("Instagram_Ego_Network_",currTime,".graphml"))
-  }
-
-  # if (writeToFile=="TRUE" | writeToFile=="true" | writeToFile=="T" | writeToFile==TRUE) {
-  #   currTime <- format(Sys.time(), "%b_%d_%X_%Y_%Z")
-  #   currTime <- gsub(":","_",currTime)
-  #   write.csv(actors,paste0("Instagram_Ego_Network_Data_",currTime,".csv"))
-  #   cat("Instagram ego network data was written to current working directory, with filename:\n")
-  #   cat(paste0("Instagram_Ego_Network_Data_",currTime,".csv"))
-  # }
-
-  return(g)
+  class(dataCombinedFinal) <- append(class(dataCombinedFinal),c("dataSource","instagram","ego"))
+  return(dataCombinedFinal)
 }
