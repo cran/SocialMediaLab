@@ -1,13 +1,14 @@
 #' Create networks from social media data
 #'
-#' This function creates network from social media data (i.e. from data frames
+#' This function creates networks from social media data (i.e. from data frames
 #' of class \code{dataSource}. \code{Create} is the final step of the
-#' \code{Authenticate}, \code{Collect}, \code{Create} workflow.
+#' \code{Authenticate}, \code{Collect}, \code{Create} workflow. This function is
+#' a convenient UI wrapper to the core Create*Network family of functions.
 #'
-#' Note: when creating Facebook *bimodal* networks, the user information
-#' is also collected and stored as vertex attributes (involving additional
-#' calls to the Facebook API). However, this is not currently implemented
-#' for Facebook *actor* networks.
+#' Note: when creating Twitter networks, the user information
+#' can be collected separately using the \code{\link{PopulateUserInfo}} function
+#' and stored into the network as vertex attributes (this involves additional
+#' calls to the Twitter API).
 #'
 #' @param dataSource a data frame of class \code{dataSource}
 #' @param type character, type of network to be created, currently supports
@@ -52,5 +53,8 @@ Create <- function(dataSource, type = "Actor", ...) {
                       ego = CreateEgoNetworkFromData,
                       stop("Unknown Type")
                       )
-    return(creator(dataSource, ...))
+    # return()
+    networkToReturn <- creator(dataSource, ...)
+    class(networkToReturn) <- append(class(networkToReturn),c("SocialMediaLab"))
+    return(networkToReturn)
 }
