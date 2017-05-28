@@ -1,12 +1,12 @@
-1aa134dbb34ffcdba0a4c48188b00338 *DESCRIPTION
-ee11371c0a7945e3c5206583f335e259 *NAMESPACE
+66a38db9242e945c12f52d9a087fa595 *DESCRIPTION
+148f34cfb1a87aa5103cdad63831ad89 *NAMESPACE
 618d990502f6ecc61231fbd34e88b1b2 *R/Authenticate.R
-3f2ab81e7103a60c34d0058319722a5e *R/AuthenticateWithFacebookAPI.R
+191d7c66fe8f76b8100ace60e9a9e8be *R/AuthenticateWithFacebookAPI.R
 e272cc4c0eb90f3e4c62623081ab5eaa *R/AuthenticateWithInstagramAPI.R
 20a813fa5e0f821bf1f41388be12091b *R/AuthenticateWithTwitterAPI.R
 bf96b007a7ef9360e7a56274f14af24f *R/AuthenticateWithYoutubeAPI.R
 5c062ffb0784184a094bf4085798ba2e *R/Collect.R
-5b116337003bdf490b6c4c7537a10456 *R/CollectDataFacebook.R
+5bf7e4ef61548e24e318843db838fb33 *R/CollectDataFacebook.R
 8cbe69cf1a915befb24bb90fee13f51d *R/CollectDataInstagram.R
 5db2792501a7ad096f51870712d942db *R/CollectDataTwitter.R
 e9d6071dd64bf7f5b752cdf2c935bde9 *R/CollectDataYoutube.R
